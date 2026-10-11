@@ -13,44 +13,43 @@ const (
 	tempoComer   = 3 * time.Second
 )
 
-func filosofo(id int, garfos []sync.Mutex, grupo *sync.WaitGroup) {
+var garfos [numFilosofos]sync.Mutex
+var grupo sync.WaitGroup
+
+func filosofo(id, rodada int) {
+	defer grupo.Done()
+
 	esquerda := id
 	direita := (id + 1) % numFilosofos
 
-	for rodada := 1; rodada <= numCiclos; rodada++ {
-		fmt.Printf("P%d | rodada %d | pensando\n", id+1, rodada)
-		time.Sleep(tempoPensar)
+	fmt.Printf("P%d | rodada %d | pensando\n", id+1, rodada)
+	time.Sleep(tempoPensar)
 
-		garfos[esquerda].Lock()
-		fmt.Printf("P%d | pegou garfo %d\n", id+1, esquerda+1)
+	garfos[esquerda].Lock()
+	fmt.Printf("P%d | pegou garfo %d\n", id+1, esquerda+1)
 
-		// Facilita observar o deadlock, sem garantir que ele aconteça.
-		time.Sleep(100 * time.Millisecond)
+	fmt.Printf("P%d | esperando garfo %d\n", id+1, direita+1)
+	garfos[direita].Lock()
 
-		fmt.Printf("P%d | esperando garfo %d\n", id+1, direita+1)
-		garfos[direita].Lock()
+	fmt.Printf("P%d | rodada %d | comendo\n", id+1, rodada)
+	time.Sleep(tempoComer)
 
-		fmt.Printf("P%d | rodada %d | comendo\n", id+1, rodada)
-		time.Sleep(tempoComer)
-
-		garfos[direita].Unlock()
-		garfos[esquerda].Unlock()
-	}
-
-	grupo.Done()
+	garfos[direita].Unlock()
+	garfos[esquerda].Unlock()
 }
 
 func main() {
-	garfos := make([]sync.Mutex, numFilosofos)
-	var grupo sync.WaitGroup
-
 	inicio := time.Now()
-	grupo.Add(numFilosofos)
 
-	for id := 0; id < numFilosofos; id++ {
-		go filosofo(id, garfos, &grupo)
+	for rodada := 1; rodada <= numCiclos; rodada++ {
+		grupo.Add(numFilosofos)
+
+		for id := 0; id < numFilosofos; id++ {
+			go filosofo(id, rodada)
+		}
+
+		grupo.Wait()
 	}
 
-	grupo.Wait()
 	fmt.Printf("\nTempo total da V1: %s\n", time.Since(inicio))
 }
