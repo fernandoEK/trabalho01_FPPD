@@ -1,3 +1,3 @@
-   module trabalho01_FPPD
+module trabalho01_FPPD
 
-   go 1.27
+go 1.27
