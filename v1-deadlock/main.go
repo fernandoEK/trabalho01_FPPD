@@ -16,40 +16,43 @@ const (
 var garfos [numFilosofos]sync.Mutex
 var grupo sync.WaitGroup
 
-func filosofo(id, rodada int) {
-	defer grupo.Done()
+func filosofo(id int) {
 
 	esquerda := id
 	direita := (id + 1) % numFilosofos
 
-	fmt.Printf("P%d | rodada %d | pensando\n", id+1, rodada)
-	time.Sleep(tempoPensar)
+	for rodada := 1; rodada <= numCiclos; rodada++ {
 
-	garfos[esquerda].Lock()
-	fmt.Printf("P%d | pegou garfo %d\n", id+1, esquerda+1)
+		fmt.Printf("P%d | rodada %d | pensando\n", id+1, rodada)
+		time.Sleep(tempoPensar)
 
-	fmt.Printf("P%d | esperando garfo %d\n", id+1, direita+1)
-	garfos[direita].Lock()
+		garfos[esquerda].Lock()
+		fmt.Printf("P%d | pegou garfo %d\n", id+1, esquerda+1)
 
-	fmt.Printf("P%d | rodada %d | comendo\n", id+1, rodada)
-	time.Sleep(tempoComer)
+		fmt.Printf("P%d | esperando garfo %d\n", id+1, direita+1)
+		garfos[direita].Lock()
 
-	garfos[direita].Unlock()
-	garfos[esquerda].Unlock()
+		fmt.Printf("P%d | rodada %d | comendo\n", id+1, rodada)
+		time.Sleep(tempoComer)
+
+		garfos[direita].Unlock()
+		garfos[esquerda].Unlock()
+	}
+
+	grupo.Done()
 }
 
 func main() {
+
 	inicio := time.Now()
 
-	for rodada := 1; rodada <= numCiclos; rodada++ {
-		grupo.Add(numFilosofos)
+	grupo.Add(numFilosofos)
 
-		for id := 0; id < numFilosofos; id++ {
-			go filosofo(id, rodada)
-		}
-
-		grupo.Wait()
+	for id := 0; id < numFilosofos; id++ {
+		go filosofo(id)
 	}
+
+	grupo.Wait()
 
 	fmt.Printf("\nTempo total da V1: %s\n", time.Since(inicio))
 }
